@@ -1,0 +1,66 @@
+\documentclass[12pt,a4paper]{article} 
+\usepackage{hyperref}
+\usepackage{alltt}
+\usepackage{framed}
+\begin{document} 
+\title{Adding support for conics in PROPER} 
+\author{Bryn Jeffries\\University of Sydney} 
+\maketitle 
+
+In the Python implementation of PROPER a \texttt{WaveFront} object is updated for each optical device or space traversed. The \texttt{WaveFront} class (see \path{prop_waveform.py}) records the state of:
+\begin{enumerate}
+\item a pilot Gaussian beam (including its initial diameter, waist width, waist location and Rayleigh distance); and
+\item a complex array (\texttt{\_wfarr}) describing the phase of the wavefront at each point on a grid at the current location along the optical axis.
+\end{enumerate}
+
+Evaluating an optical system therefore involves modifying both of these components at each step. The only optical surfaces PROPER supports are quadratic lenses, equivalent to parabolic mirrors, with phase varying as
+\begin{equation} \label{eq:phaseql}
+\Delta\Phi(r) = -\frac{2\pi}{\lambda} \frac{r^2}{2f_l}
+\end{equation}
+where $f_l$ is the focal length of the lens. Applying such a lens (see \path{prop_lens.py}) requires first updating the pilot beam, and then determining the lens phase factor $\phi_l$ (just $1/f_l$ when operation within the Rayleigh region, but involving other corrections related to the beam radius when the beam starts or ends outside of this region), after which the wavefront array $\mathrm{wf}$ is updated as
+\begin{equation} \label{eq:updatephaseql}
+\mathrm{wf}(x,y)' =\mathrm{wf}(x,y) \exp\left(-i\frac{2\pi}{\lambda}  \frac{r_{x,y}^2\phi_l}{2}\right)
+\end{equation}
+where $r_{x,y}$ is the distance of wavefront grid location from the centre of the current wavefront.
+
+PROPER's manual makes reference to the Zemax manual for much of its treatment of Fresnel propagation. The sag of a standard surface, is given in the Zemax manual (p.~325) by:
+\begin{equation}
+z = \frac{cr^2}{1 + \sqrt{1 - (1+k)c^2r^2}}
+\end{equation}
+where $c$ is the reciprocal of the surface radius, $r$ is the radius from the axis, and $k$ is the conic constant. This is a measure of the change in distance along the optical axis of the surface from the plane at $r=0$. It seems intuitive then that the general phase introduced by a conic mirror is then
+\begin{equation}
+\Delta\Phi(r) = -\frac{2\pi}{\lambda} z = -\frac{2\pi}{\lambda} \frac{cr^2}{1 + \sqrt{1 - (1+k)c^2r^2}}
+\end{equation}
+as this reduces to Eq.~(\ref{eq:phaseql}) in the case of a parabolic surface, with $k=-1$, provided $c\equiv\phi_l$.
+
+To handle the case of conics in PROPER, it therefore seems reasonable that all that needs to change is to geeralise the quadratic lens case in Eq.~(\ref{eq:updatephaseql}) to
+\begin{equation} \label{eq:updatephaseconic}
+\mathrm{wf}(x,y)' = \mathrm{wf}(x,y) \exp\left(-i\frac{2\pi}{\lambda}  \frac{r_{x,y}^2\phi_l}{1 + \sqrt{1 - (1+k)\phi_l^2r^2}}\right)
+\end{equation}
+This requires replacing only a single line of the quadratic lens code in \path{prop_lens.py} (plus adding $k$ as an argument to the function), from
+\begin{framed}
+\begin{alltt}
+proper.prop_add_phase(wf, -rho**2 * (lens_phase/2.))
+\end{alltt}
+\end{framed}
+to
+\begin{framed}
+\begin{alltt}
+def conic_phase(r,k,phi):
+  rsq = r**2
+  return -rsq*phi/(1. + math.sqrt(1. - (1. + k)*rsq*(phi**2)))
+conic_phase = np.vectorize(conic_phase)
+
+proper.prop_add_phase(wf, 
+              conic_phase(phase_grid, conic, lens_phase)
+\end{alltt}
+\end{framed}
+
+\begin{thebibliography}{99} 
+\bibitem{proper} John E. Krist, PROPER: an optical propagation library for IDL, Proc. SPIE 6675, Optical Modeling and Performance Predictions III, 6675, (23 October 2007), \href{http://dx.doi.org/10.1117/12.731179}{doi: 10.1117/12.731179}. Source-code and manual downloaded from \url{proper-library.sourceforge.net}
+ 
+\bibitem{zemaxman} ZEMAX User's Manual, July 8, 2011, Radiant ZEMAX LLC.
+Downloaded Feb 9, 2018 from \url{https://neurophysics.ucsd.edu/Manuals/Zemax/ZemaxManual.pdf}
+ 
+\end{thebibliography}
+\end{document}
