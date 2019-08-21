@@ -1,0 +1,7 @@
+array_size: 2000
+min_radius: 1
+max_radius: 10
+min_radial: 8
+max_radial: 16
+min_angular: 4
+max_angular: 16

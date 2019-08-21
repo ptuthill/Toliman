@@ -1,0 +1,8 @@
+aperture: 0.1
+focal_length: 0.5
+detector_size: 1024
+detector_pitch: 11e-6
+wavelength: 600e-9
+fringe_extent: 4
+
+
