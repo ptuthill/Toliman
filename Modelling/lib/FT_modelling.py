@@ -1,5 +1,5 @@
 import numpy as np
-from lib.angular_conversion import *
+from lib.conversions import *
 
 def pupil_phase_offset(pupil, aperture, wavelength, azimuthal_offset, angular_offset):
     """

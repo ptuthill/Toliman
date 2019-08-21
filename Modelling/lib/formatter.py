@@ -1,4 +1,5 @@
 import numpy as np
+import imageio
 from astropy.io import fits
 
 def pupil_from_fits(file_name, offset=0):
@@ -100,3 +101,34 @@ def create_phase_file(file_name, pupil, aperture, unit):
             for j in range(ny):
                 phase_val = np.angle(pupil[i][j])
                 f.write("{} {} {} {} {}\n".format(phase_val, 0, 0, 0, 0))  
+                
+def create_gif(arrays, name, directory="files/gifs"):
+    """
+    Creates a gif out of a series of greyscale arrays
+    
+    Inputs:
+        arrays, array: A list or array of (greyscale) arrays to turned into a gif
+        name, String: Name of the gif to be created
+        directory, string: location to place the gifs object in
+        
+    Returns:
+        None
+        
+    Notes:
+        Negative values are not handled properly! (can use np.abs() to fix for small values)
+    """
+    formatted_arrays = format_arrays(arrays)
+    imageio.mimsave("{}/{}.gif".format(directory, name), formatted_arrays)
+    
+def format_arrays(arrays):
+    """
+    Formats (scales) the data in a series of arrays to be turned into gif series
+    Primary use is to suspress warning output when creating a gif with imagieio
+    """
+    arrays_out = []
+    for array in arrays:
+        scaled_array = 255 * (array / np.max(array))
+        formatted = scaled_array.astype(np.uint8)
+        arrays_out.append(formatted)
+        
+    return arrays_out
