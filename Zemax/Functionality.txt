@@ -1,13 +1,7 @@
 To Do:
- - Get rid of redundant notebooks
- - Look to eliminate Importer
  - Turn this into a READEME.md and README.ipynb to explain everything
- - Look to functionalise and eliminate Angular_seperation
  - Look to merge Model_fitting_development and Image_modelling in some way
- - Turn func_lib into a folder 
-    ~ Divide similar functions up into their own scripts
-    ~ Use notebooks as a test/development bed
-    ~ Doccument scripts better
+ - Doccument scripts in lib/
 
 
 ~~~ Main Notebooks ~~~
@@ -43,35 +37,3 @@ Image_modelling: (originally noise modeeling)
     
     Much of this can be tunred into functions for func_lib
     Mostly does the same as Model_fitting_development but with accurate spectra and extra noise
-    
-    
-~~~ Scripts ~~~
- 
- func_lib:
-  - Place for all the general functions used across the notebooks
-  - Needs to be better doccumented
-  - Create a short summary file about what each functions does
-
-
-~~~ Other Notebooks ~~~
-
-Angular_separtion:
-    Used to convert relative positions in the sky into pixel and angular values 
-    Look to turn into a series of robust functions to do a series of conversions
-    
-Zemax_formatting:
-    Script for formatting python objects into data files for Zemax files
-    Good to keep as a place for formatting things into and out of Zemax
-    
-Pysynphot:
-    Used to look at simulated stellar spectra from pysynphot
-    Calculates photon rates for different apertures and sellar magnitudes
-    Good to keep as a general place to interact with pysynphot 
-    
-Importer:
-    Precursor script to Image_modelling
-     - check for redundancies and try to remove
-     
-Gunagala:
-    Old script for the Gunagala package
-     - Could be removed but contains good information on the detector and other basic information

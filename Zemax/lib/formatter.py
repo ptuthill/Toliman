@@ -1,0 +1,102 @@
+import numpy as np
+from astropy.io import fits
+
+def pupil_from_fits(file_name, offset=0):
+    """
+    Takes in the fits file and returns a complex array of the pupil
+    """
+    # Create a fits object from astropy
+    fits_file = fits.open(file_name)[0].data
+    
+    # Calculate needed values
+    gridsize = fits_file.shape[0] - 2*offset
+    c = gridsize//2
+    
+    # Create value arrays
+    Xs = np.linspace(-c, c-1, num=gridsize)
+    X, Y = np.meshgrid(Xs, Xs)
+    r = np.hypot(X, Y)
+    
+    # Create pupil
+    pupil = np.exp(1j*fits_file)
+    
+    # Zero outer regions
+    pupil[r >= (gridsize//2) + offset] = np.complex(0,0)
+        
+    return pupil
+
+def zemax_to_array(path_to_file):
+    with open(path_to_file,'rb') as f:
+        contents = f.read()
+        
+    contents = contents.decode("utf-16").split("\n")
+    data_raw = [line.strip() for line in contents]
+    
+    metadata = []
+    data = []
+    
+    for line in data_raw[:20]:
+        if line != '':
+            metadata.append(line)
+            
+    for line in data_raw[21:-1]:
+        line = line.split("\t  ")
+        line_formatted = [float(l) for l in line if l != '']
+        data.append(line_formatted)
+        
+    return np.asarray(data), metadata
+
+def create_sag_file(file_name, pupil, aperture, unit, target_wl):
+    """
+    Creates a sag file formatted for Zemax
+    file_name: Name for the file
+    Pupil: complex array
+    unit: unit of measurement (mm, cm, m, in)
+    aperture: telescope aperture in units of 'unit'
+    target_wl: ideal wavelength in units of 'unit'
+    """
+    unit_dict = {"mm": 0, "cm": 1, "in": 2, "m": 3}
+    phase_range = 2*np.pi
+    
+    nx = pupil.shape[0]
+    ny = pupil.shape[1]
+    delx = aperture/nx
+    dely = aperture/ny
+    unitflag  = unit_dict[unit]
+    xdec = 0
+    ydec = 0
+    
+    with open("{}_sag.DAT".format(file_name), 'w') as f:
+        f.write("{} {} {} {} {} {} {}\n".format(nx, ny, delx, dely, unitflag, xdec, ydec))
+        
+        for i in range(nx):
+            for j in range(ny):
+                sag_ratio = np.angle(pupil[i][j])/phase_range
+                sag_val = sag_ratio*target_wl
+                f.write("{} {} {} {} {}\n".format(sag_val, 0, 0, 0, 0))
+                
+def create_phase_file(file_name, pupil, aperture, unit):
+    """
+    Creates a sag file formatted for Zemax
+    file_name: Name for the file
+    Pupil: complex array
+    unit: unit of measurement (mm, cm, m, in)
+    aperture: telescope aperture in units of 'unit'
+    """
+    unit_dict = {"mm": 0, "cm": 1, "in": 2, "m": 3}
+    
+    nx = pupil.shape[0]
+    ny = pupil.shape[1]
+    delx = aperture/nx
+    dely = aperture/ny
+    unitflag  = unit_dict[unit]
+    xdec = 0
+    ydec = 0
+    
+    with open("{}_phase.DAT".format(file_name), 'w') as f:
+        f.write("{} {} {} {} {} {} {}\n".format(nx, ny, delx, dely, unitflag, xdec, ydec))
+        
+        for i in range(nx):
+            for j in range(ny):
+                phase_val = np.angle(pupil[i][j])
+                f.write("{} {} {} {} {}\n".format(phase_val, 0, 0, 0, 0))  
