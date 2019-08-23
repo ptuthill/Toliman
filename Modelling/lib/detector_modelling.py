@@ -17,8 +17,7 @@ def CCD_output(photons, QE, read_noise, dark_current, fps, gain, full_well):
     BUG: some values are returned as negative (fixed with np.abs?)
     """
     # Poission noise of photons 
-    photons = np.random.poisson(np.abs(photons)) 
-#     photons = np.random.poisson(photons) 
+    photons = np.abs(np.random.poisson(photons))
     
     # Convert photons to electrons 
     electrons = np.round(photons * QE) 
@@ -27,7 +26,7 @@ def CCD_output(photons, QE, read_noise, dark_current, fps, gain, full_well):
     dark_noise = read_noise + (dark_current/fps) 
     
     # Model noise with gaussian distribution
-    noise = np.round(np.random.normal(scale=dark_noise, size=electrons.shape)) 
+    noise = np.abs(np.round(np.random.normal(scale=dark_noise, size=electrons.shape)))
     
     # Add noise CCD noise to image and get ADU output
     # Should this be sensitivity rather than gain?? 
@@ -79,7 +78,7 @@ def interpolate_bayer(image):
     red = get_red(image)
     green = get_green(image)
     blue = get_blue(image)
-    return [red, green, blue]
+    return (red, green, blue)
 
 def get_red(image):
     """

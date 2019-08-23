@@ -117,9 +117,9 @@ def create_gif(arrays, name, directory="files/gifs"):
     Notes:
         Negative values are not handled properly! (can use np.abs() to fix for small values)
     """
-#     formatted_arrays = format_arrays(arrays)
-#     imageio.mimsave("{}/{}.gif".format(directory, name), formatted_arrays)
-    imageio.mimsave("{}/{}.gif".format(directory, name), arrays)
+    formatted_arrays = format_arrays(arrays)
+    imageio.mimsave("{}/{}.gif".format(directory, name), formatted_arrays)
+#     imageio.mimsave("{}/{}.gif".format(directory, name), arrays)
     
 def format_arrays(arrays):
     """
@@ -128,7 +128,7 @@ def format_arrays(arrays):
     """
     arrays_out = []
     for array in arrays:
-        scaled_array = 255 * (array / np.max(array))
+        scaled_array = 255 * (np.abs(array) / np.max(array))
         formatted = scaled_array.astype(np.uint8)
         arrays_out.append(formatted)
         
