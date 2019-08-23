@@ -1,7 +1,8 @@
 import numpy as np
 from lib.conversions import *
+# from conversions import *
 
-def pupil_phase_offset(pupil, aperture, wavelength, azimuthal_offset, angular_offset):
+def pupil_phase_offset_test(pupil, aperture, wavelength, azimuthal_offset, angular_offset):
     """
     Calculates the change in phase across the pupil induced by an off centre star
     pupil: complex array representing the phase pupil
@@ -12,7 +13,7 @@ def pupil_phase_offset(pupil, aperture, wavelength, azimuthal_offset, angular_of
     """
     # Calcuate the needed values
     gridsize = pupil.shape[0]
-    offset = asec_to_rad(azimuthal_offset)
+    offset = arcsec_to_rad(azimuthal_offset)
     OPD = aperture*np.tan(offset)
     cycles = OPD/wavelength
     period = gridsize/cycles
@@ -35,7 +36,7 @@ def pupil_phase_offset(pupil, aperture, wavelength, azimuthal_offset, angular_of
     aperture_phase = mag_array*(phase_array - angle_array)
     pupil_out = mag_array * np.exp(1j*aperture_phase)
     
-    return pupil_out
+    return pupil_out, phase_array
 
 def model_FT(mask, mask_size, chip_dim, wavel, foc_length, pix_size):
     """
@@ -52,7 +53,7 @@ def model_FT(mask, mask_size, chip_dim, wavel, foc_length, pix_size):
     
     spatial_freq = wavel/mask_size
     array_size = int(grid_size*spatial_freq/plate_scale)
-    complex_array = np.array(np.zeros((array_size,array_size)),dtype=complex)
+    complex_array = np.zeros((array_size,array_size), dtype=complex)
     complex_array[0:grid_size, 0:grid_size] = mask
     im = np.fft.fftshift(np.abs(np.fft.fft2(complex_array))**2)
         

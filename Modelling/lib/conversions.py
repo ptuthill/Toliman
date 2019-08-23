@@ -44,7 +44,7 @@ def arcmin_to_asec(angle):
 
 
 # From arcseconds
-def asec_to_rad(angle):
+def arcsec_to_rad(angle):
     return angle * np.pi / (180 * 3600)
 
 def arcsec_to_deg(angle):
