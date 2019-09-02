@@ -116,6 +116,8 @@ def create_phase_file(file_name, pupil, aperture, unit):
         for i in range(nx):
             for j in range(ny):
                 phase_val = np.angle(pupil[i][j])
+                if phase_val < 1e-6:
+                    phase_val = 0
                 f.write("{} {} {} {} {}\n".format(phase_val, 0, 0, 0, 0))  
                 
 def create_gif(arrays, name, directory="files/gifs"):
