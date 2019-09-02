@@ -1,16 +1,29 @@
 import numpy as np
 import imageio
 from astropy.io import fits
+from scipy.ndimage import zoom
 
-def pupil_from_fits(file_name, offset=0):
+
+def pupil_from_fits(file_name, offset=0, output_size=0):
     """
     Takes in the fits file and returns a complex array of the pupil
     """
     # Create a fits object from astropy
     fits_file = fits.open(file_name)[0].data
+    array = np.array(fits_file)
     
+    if output_size != 0:
+        ratio = output_size/array.shape[0]
+        scaled_array = zoom(array, ratio)
+
+        # Some values seem to get changed in the process, this is an ad-hoc fix
+        scaled_array[scaled_array >= np.pi] = np.pi
+        scaled_array[scaled_array < 0] = 0
+        
+        array = scaled_array
+
     # Calculate needed values
-    gridsize = fits_file.shape[0] - 2*offset
+    gridsize = array.shape[0] - 2*offset
     c = gridsize//2
     
     # Create value arrays
@@ -19,7 +32,7 @@ def pupil_from_fits(file_name, offset=0):
     r = np.hypot(X, Y)
     
     # Create pupil
-    pupil = np.exp(1j*fits_file)
+    pupil = np.exp(1j*array)
     
     # Zero outer regions
     pupil[r >= (gridsize//2) + offset] = np.complex(0,0)
