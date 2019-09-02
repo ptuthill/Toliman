@@ -87,6 +87,9 @@ def create_sag_file(file_name, pupil, aperture, unit, target_wl):
             for j in range(ny):
                 sag_ratio = np.angle(pupil[i][j])/phase_range
                 sag_val = sag_ratio*target_wl
+                if sag_val < 1e-6:
+                    sag_val = 0
+                    
                 f.write("{} {} {} {} {}\n".format(sag_val, 0, 0, 0, 0))
                 
 def create_phase_file(file_name, pupil, aperture, unit):
