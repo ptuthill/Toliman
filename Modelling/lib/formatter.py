@@ -80,17 +80,17 @@ def create_sag_file(file_name, pupil, aperture, unit, target_wl):
     xdec = 0
     ydec = 0
     
-    with open("{}_sag.DAT".format(file_name), 'w') as f:
+    with open("{}.DAT".format(file_name), 'w') as f:
         f.write("{} {} {} {} {} {} {}\n".format(nx, ny, delx, dely, unitflag, xdec, ydec))
         
         for i in range(nx):
             for j in range(ny):
                 sag_ratio = np.angle(pupil[i][j])/phase_range
-                sag_val = sag_ratio*target_wl
-                if sag_val < 1e-6:
+                sag_val = sag_ratio*target_wl/2
+                if sag_val < 1e-12:
                     sag_val = 0
                     
-                f.write("{} {} {} {} {}\n".format(sag_val, 0, 0, 0, 0))
+                f.write("{} {} {} {} {}\n".format(float(sag_val), 0, 0, 0, 0))
                 
 def create_phase_file(file_name, pupil, aperture, unit):
     """
@@ -110,13 +110,13 @@ def create_phase_file(file_name, pupil, aperture, unit):
     xdec = 0
     ydec = 0
     
-    with open("{}_phase.DAT".format(file_name), 'w') as f:
+    with open("{}.DAT".format(file_name), 'w') as f:
         f.write("{} {} {} {} {} {} {}\n".format(nx, ny, delx, dely, unitflag, xdec, ydec))
         
         for i in range(nx):
             for j in range(ny):
                 phase_val = np.angle(pupil[i][j])
-                if phase_val < 1e-6:
+                if phase_val < 1e-12:
                     phase_val = 0
                 f.write("{} {} {} {} {}\n".format(phase_val, 0, 0, 0, 0))  
                 
