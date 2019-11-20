@@ -29,6 +29,15 @@ def pupil_from_fits(file_name):
 
 pupil = pupil_from_fits("pupil_file.fits")
 
+c = pupil.shape[0]//2
+s = 10
+
+cen = pupils[c-s:c+s, c-s:c+s]
+mini = np.min(np.angle(cen))
+maxi = np.max(np.angle(cen))
+
+print(mini - maxi)
+
 plt.imshow(np.angle(pupil))
 plt.title("Phase change induced by pupil, units of phase")
 plt.colorbar()

@@ -4,7 +4,7 @@ from lib.primary_functions import *
 # Inputs
 batch_name = "test3"
 batch_size = 25
-G_Saxburg_inputs = {"outer_limit": 10, "inner_limit": 0.5}
+G_Saxburg_inputs = {"outer_limit": 10, "inner_limit": 0.55}
 
 
 pupil_inputs, simulation_settings = load_batch_data(os.getcwd())
