@@ -254,6 +254,8 @@ def evaluate_pupil(pupil, input_values):
             
     return images, heuristics, visual_analysis
 
+
+### Moved to batch.py
 def create_new_batch(batch_name, simulation_settings):
     """
     Creates the file structure for a new batch of pupil generation

@@ -1,5 +1,7 @@
 # Modelling
 
+Note the main the Fourier Transform modelling code if now called "on_axis_FT" and "off_Axis_FT"
+
 ## To Do:
 
 - Build a python driver of Zemax
@@ -17,4 +19,4 @@
 
 ## Known bugs
 
-- None! For now... :( 
+- None! ......... For now :( 

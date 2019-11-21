@@ -1,7 +1,7 @@
 """
 A script to contain all of the different functions used to backtransform a modifed wavefront into a coherent pupil
 
-NOTE: Do NOT change any of the functions in here, simplycreate a new function and change the name (ie _1_1) to reflect the changes
+NOTE: Do NOT change any of the functions in here, simply create a new function and change the name (ie _1_1) to reflect the changes
     This is to ensure that we can always track how a pupil was generated and use the exact function that was used on a pupil
 """
 from lib.secondary_functions import *

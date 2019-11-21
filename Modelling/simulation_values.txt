@@ -1,0 +1,1 @@
+{"aperture": 0.1, "m2_obsc": 0.011, "focal_length": 3.635, "wavelength": 5.95e-07, "detector_size": 200, "detector_pitch": 6.5e-06, "transform_size": 1024, "zmx_pixel_size": 1.625e-06, "interp_order": 1}
