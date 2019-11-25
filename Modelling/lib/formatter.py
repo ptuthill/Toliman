@@ -4,26 +4,51 @@ from astropy.io import fits
 from scipy.ndimage import zoom
 
 
-def pupil_from_fits(file_name, offset=0, output_size=0):
+# def pupil_from_fits(file_name, offset=0, output_size=0):
+#     """
+#     Takes in the fits file and returns a complex array of the pupil
+#     """
+#     # Create a fits object from astropy
+#     fits_file = fits.open(file_name)[0].data
+#     array = np.array(fits_file)
+    
+#     if output_size != 0:
+#         ratio = output_size/array.shape[0]
+#         scaled_array = zoom(array, ratio)
+
+#         # Some values seem to get changed in the process, this is an ad-hoc fix
+#         scaled_array[scaled_array >= np.pi] = np.pi
+#         scaled_array[scaled_array < 0] = 0
+        
+#         array = scaled_array
+
+#     # Calculate needed values
+#     gridsize = array.shape[0] - 2*offset
+#     c = gridsize//2
+    
+#     # Create value arrays
+#     Xs = np.linspace(-c, c-1, num=gridsize)
+#     X, Y = np.meshgrid(Xs, Xs)
+#     r = np.hypot(X, Y)
+    
+#     # Create pupil
+#     pupil = np.exp(1j*array)
+    
+#     # Zero outer regions
+#     pupil[r >= (gridsize//2) + offset] = np.complex(0,0)
+        
+#     return pupil
+
+def pupil_from_fits(file_name):
     """
     Takes in the fits file and returns a complex array of the pupil
     """
     # Create a fits object from astropy
     fits_file = fits.open(file_name)[0].data
     array = np.array(fits_file)
-    
-    if output_size != 0:
-        ratio = output_size/array.shape[0]
-        scaled_array = zoom(array, ratio)
-
-        # Some values seem to get changed in the process, this is an ad-hoc fix
-        scaled_array[scaled_array >= np.pi] = np.pi
-        scaled_array[scaled_array < 0] = 0
-        
-        array = scaled_array
 
     # Calculate needed values
-    gridsize = array.shape[0] - 2*offset
+    gridsize = array.shape[0]
     c = gridsize//2
     
     # Create value arrays
@@ -35,11 +60,14 @@ def pupil_from_fits(file_name, offset=0, output_size=0):
     pupil = np.exp(1j*array)
     
     # Zero outer regions
-    pupil[r >= (gridsize//2) + offset] = np.complex(0,0)
+    pupil[r >= (gridsize//2)] = np.complex(0,0)
         
     return pupil
 
 def zemax_to_array(path_to_file):
+    """
+    Coverts Zemax .txt filed to numpy arrays
+    """
     with open(path_to_file,'rb') as f:
         contents = f.read()
         
@@ -65,7 +93,7 @@ def create_sag_file(file_name, pupil, aperture, unit, target_wl):
     Creates a sag file formatted for Zemax
     file_name: Name for the file
     Pupil: complex array
-    unit: unit of measurement (mm, cm, m, in)
+    unit: unit of measurement {"mm": 0, "cm": 1, "in": 2, "m": 3}
     aperture: telescope aperture in units of 'unit'
     target_wl: ideal wavelength in units of 'unit'
     """
@@ -97,7 +125,7 @@ def create_phase_file(file_name, pupil, aperture, unit):
     Creates a sag file formatted for Zemax
     file_name: Name for the file
     Pupil: complex array
-    unit: unit of measurement (mm, cm, m, in)
+    unit: unit of measurement {"mm": 0, "cm": 1, "in": 2, "m": 3}
     aperture: telescope aperture in units of 'unit'
     """
     unit_dict = {"mm": 0, "cm": 1, "in": 2, "m": 3}
@@ -110,16 +138,24 @@ def create_phase_file(file_name, pupil, aperture, unit):
     xdec = 0
     ydec = 0
     
+    phases = []
+    
     with open("{}.DAT".format(file_name), 'w') as f:
         f.write("{} {} {} {} {} {} {}\n".format(nx, ny, delx, dely, unitflag, xdec, ydec))
         
         for i in range(nx):
             for j in range(ny):
                 phase_val = np.angle(pupil[i][j])
+                
+                if phase_val not in phases:
+                    phases.append(phase_val)
+                    
                 if phase_val < 1e-12:
                     phase_val = 0
-                f.write("{} {} {} {} {}\n".format(phase_val, 0, 0, 0, 0))  
-                
+                f.write("{} {} {} {} {}\n".format(float(phase_val), 0, 0, 0, 0))  
+    print(phases)
+    
+    
 def create_gif(arrays, name, directory="files/gifs"):
     """
     Creates a gif out of a series of greyscale arrays

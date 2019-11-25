@@ -14,7 +14,7 @@ def CCD_output(photons, QE, read_noise, dark_current, fps, gain, full_well):
     
     primarily put together with info from: http://kmdouglass.github.io/posts/modeling-noise-for-image-simulations/
     
-    BUG: some values are returned as negative (fixed with np.abs?)
+    BUG: some values are returned as negative (fixed with np.abs of the poission noise?)
     """
     # Poission noise of photons 
     photons = np.abs(np.random.poisson(photons))
