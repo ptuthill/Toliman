@@ -21,10 +21,19 @@ def model_image(inputs):
     Drives the model_PSF function.
     Saves outputs to file to combine later
     """
-    
-    aperture, m2_obsc, npix, foc_length, pix_size, transform_size, sim_name, n, wl, r, phi, star = inputs
-    pupil = np.load("{}/pupils/{}.npy".format(sim_name, wl))
-    PSF = model_PSF(pupil, aperture, m2_obsc, npix, wl*1e-9, foc_length, pix_size, transform_size, r, phi)
+    if len(inputs) == 12:
+        aperture, m2_obsc, npix, foc_length, pix_size, transform_size, sim_name, n, wl, r, phi, star = inputs
+        pupil = np.load("{}/pupils/{}.npy".format(sim_name, wl))
+        wavefront_error = None
+    elif len(inputs) == 13:
+        aperture, m2_obsc, npix, foc_length, pix_size, transform_size, sim_name, n, wl, r, phi, star,wfe_terms = inputs
+        pupil = np.load("{}/pupils/{}.npy".format(sim_name, wl))
+        wavefront_error = add_zernikes(wfe_terms,pupil.shape)
+    else:
+        raise Exception('Wrong number of params in model_image')
+        
+    PSF = model_PSF(pupil, aperture, m2_obsc, npix, wl*1e-9, foc_length, pix_size, transform_size, r, phi,
+                    wavefront_error=wavefront_error)
     np.save("{}/PSFs/{}_{}_{}.npy".format(sim_name, n, wl, star), PSF)
     
 def model_PSF(pupil, aperture, m2_obsc, npix, wl, focal_length, pix_size, transform_size, r, phi,wavefront_error=None):
@@ -229,19 +238,20 @@ def calculate_phase_gradient(pupil, aperture, wavelength, r, phi, shift=False):
     
     return phase_array
 
-def make_zernike(array_size,m,n,amplitude=1):
+def make_zernike(array_shape,m,n,amplitude=1):
     """
     Make a zernike function on a circular aperture.
     Assumes the aperture fills the array.
     m,n define the polynomial and must be integers.
     
     Coordinates are defined relative to the corner of the 4 middle pixels, 
-      not the centre of pixel (array_size//2,array_size//2).
+      not the centre of pixel (array_shape//2,array_shape//2).
     """
-    radii_range = np.linspace(-array_size[0]//2,array_size[0]//2, num=array_size[0], endpoint=False)
+
+    radii_range = np.arange(array_shape[0])-array_shape[0]/2
     x,y = np.meshgrid(radii_range, radii_range)
     
-    radius = np.hypot(x,y) / (array_size[0]/2)
+    radius = np.hypot(x,y) / (array_shape[0]/2)
     theta = np.arctan2(x,y)
     def R_func(n,m,radius):
         R = np.zeros(radius.shape)
@@ -265,7 +275,20 @@ def make_zernike(array_size,m,n,amplitude=1):
     # zero out the region outside the aperture
     # todo: include proper aperture size, not just the radius of the array
     z[radius>1] = 0
-    return z
+    return z*amplitude
+
+def add_zernikes(wfe_terms,array_shape):
+    """
+    Takes a dictionary of wavefront error terms and produces 
+    a single wavefront error map
+    """
+    wfe_map = np.zeros(array_shape)
+    for wfe_coeffs in wfe_terms.keys():
+        wfe_amplitude = wfe_terms[wfe_coeffs]  
+        m,n = wfe_coeffs
+        
+        wfe_map += make_zernike(array_shape,m,n,amplitude=wfe_amplitude) # symmetric term
+    return wfe_map
 
 def fft_rotate(in_frame, alpha, pad=4, return_full = False):
     """
@@ -365,3 +388,13 @@ def fft_rotate(in_frame, alpha, pad=4, return_full = False):
         return np.abs(pad_xyx).copy()
     else:
         return np.abs(pad_xyx[px1:px2,py1:py2]).copy()
+    
+    
+def add_photon_noise(image,peak_photons=None):
+    """ Add photon noise to an image.
+    peak_photons is the number of counts in the maximum pixel value of the image.
+    """
+    if peak_photons != None:
+        image *= peak_photons/image.max()
+        image = np.random.poisson(lam=image,size=image.shape)
+    return image
