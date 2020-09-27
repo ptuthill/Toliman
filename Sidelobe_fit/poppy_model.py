@@ -325,7 +325,17 @@ def airy_model_residuals(params,*args,**kwargs):
     acenA = S.Icat('phoenix',stellar_teff,0.2,4.3)
     specA = acenA.sample(source_rest_wavs*1e10) # This needs angstroms as input
     
-    filter_spec = supergaussian(wavs,filter_centre,sigma=105e-9) # Fixed spectrum!
+    if 'filter_sigma' in kwargs.keys():
+        filter_sigma = kwargs['filter_sigma']
+    else:
+        filter_sigma = 105e-9
+        
+    if 'filter_n' in kwargs.keys():
+        filter_n = kwargs['filter_n']
+    else:
+        filter_n = 8
+    
+    filter_spec = supergaussian(wavs,filter_centre,sigma=filter_sigma,n=filter_n)
     spectrum = filter_spec*specA
     spectrum *= flux/np.max(spectrum)
     
