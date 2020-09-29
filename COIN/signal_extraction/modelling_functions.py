@@ -56,7 +56,7 @@ def larkin_model_negative(x,y,amplitude=1.,x_0=0.,y_0=0.,radius=1.,background = 
     intensity += background
     return intensity
 
-def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False):
+def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False,rough_sep_pix = 45):
     """ Function to fit to the Larkin Transform of the image.
     params = [x0, y0, flux0, width0, sep, pa, flux1, width1]
     x0, y0 = position of primary relative to the central pixel
@@ -65,6 +65,7 @@ def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False):
     sep,pa = separation and position angle of the binary
     
     transformed_im = larkin transformed image
+    rough_sep_pix = approximate separation of the binary. Used for the fixed windowing, not the fit.
     
     plot: If set, will display a plot of the primary, model and residuals, and secondary, model and residuals
     fit_airy: If False (default) with fit sqrt(AiryDisk) to the data. If True, will fit AiryDisk.
@@ -73,6 +74,8 @@ def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False):
         [primary_fit,secondary_fit] astropy models
     """
     x0,y0,flux0,width0,sep,pa,flux1,width1 = params
+    
+    rough_sep_pix = int(round(rough_sep_pix))
     
     im_shape = transformed_im.shape
     y,x = np.indices(im_shape)
@@ -105,11 +108,11 @@ def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False):
     prim_fit = fit(prim,x_prim,y_prim,cut_prim_im,maxiter=100000,acc=1e-9)
     
     cut_sec_im = transformed_im[im_shape[0]//2-cutsz:im_shape[0]//2+cutsz,
-                                im_shape[1]//2-cutsz+45:im_shape[1]//2+cutsz+45]
+                                im_shape[1]//2-cutsz+rough_sep_pix:im_shape[1]//2+cutsz+rough_sep_pix]
     x_sec = x[im_shape[0]//2-cutsz:im_shape[0]//2+cutsz,
-               im_shape[1]//2-cutsz+45:im_shape[1]//2+cutsz+45]
+               im_shape[1]//2-cutsz+rough_sep_pix:im_shape[1]//2+cutsz+rough_sep_pix]
     y_sec = y[im_shape[0]//2-cutsz:im_shape[0]//2+cutsz,
-               im_shape[1]//2-cutsz+45:im_shape[1]//2+cutsz+45]
+               im_shape[1]//2-cutsz+rough_sep_pix:im_shape[1]//2+cutsz+rough_sep_pix]
     sec_fit = fit(sec,x_sec,y_sec,cut_sec_im,maxiter=100000,acc=1e-9)
 
     
@@ -138,3 +141,68 @@ def larkin_transform_fit(params,transformed_im,plot=True,fit_airy=False):
 
 #     return sep
     return prim_fit,sec_fit
+
+def autocorrelation_fit(im2, rough_sep = 44.93, rough_pa=0., cutout_sz=5, background_subtracted=False,
+             plot_cutout=False, plot_resids=False):
+    """ Fits to the distance of the second peak in the autocorrelation (i.e. the binary separation).
+        This will perform a Levenberg-Marquardt fit over a small, fixed region around the peak. 
+        The model used for the fit will depend on the options set.
+        
+        rough_sep, rough_pa: Defaults 44.93 pixels and 0 degrees
+            These define the position of the region used for the fit.
+        cutout_sz: Default 5 pixels
+            The radius of the box used for the fit.
+        background_subtracted: Default False
+            If True, the model used for the fit will be an Airy Disk + constant background.
+            If False, the model will be a Gaussian + planar background.
+            These seemed to work best.
+    """
+    
+    rough_pos = np.round([rough_sep*np.sin(rough_pa),rough_sep*np.cos(rough_pa)]).astype(int)
+    calc_pos = [rough_sep*np.sin(rough_pa),rough_sep*np.cos(rough_pa)]
+    
+    cutout = np.copy(im2[im2.shape[0]//2+rough_pos[0]-cutout_sz:im2.shape[0]//2+rough_pos[0]+cutout_sz,
+                 im2.shape[1]//2+rough_pos[1]-cutout_sz:im2.shape[1]//2+rough_pos[1]+cutout_sz])
+
+    cutout /= np.max(cutout)
+    if plot_cutout:
+        plt.imshow(cutout)
+
+    x,y = np.indices(cutout.shape)
+    x = x + rough_pos[0] - cutout_sz
+    y = y + rough_pos[1] - cutout_sz
+    
+    # Fit a Gaussian
+    fit = fitting.LevMarLSQFitter()
+    
+    if background_subtracted:
+        gauss = models.AiryDisk2D(amplitude=cutout.max(),x_0=calc_pos[0],y_0=calc_pos[1],radius=3.54)        
+        bckgd = models.Const2D(amplitude=0.6)
+    else:
+        gauss = models.Gaussian2D(amplitude = cutout.max(),x_stddev=1.36,y_stddev=1.36,
+                                  x_mean=calc_pos[0],y_mean=calc_pos[1])
+
+        bckgd = models.Planar2D(slope_x = -0.00564816,slope_y=-0.02378304,intercept=1.01)
+        gauss.fixed['theta']=True
+        
+    cutout_model = gauss + bckgd
+
+    # fit the data with the fitter
+    fitted_model = fit(cutout_model,x,y,cutout,maxiter=100000,acc=1e-7);
+    
+    # Rename the parameters so the output looks the same
+    if background_subtracted:
+        fitted_model.x_mean_0 = fitted_model.x_0_0
+        fitted_model.y_mean_0 = fitted_model.y_0_0
+        
+    if plot_resids:
+        test = fitted_model(x,y)
+        plt.figure(figsize=(12,4))
+        plt.clf()
+        plt.subplot(131)
+        plt.imshow(cutout,origin='lowerleft',vmin=0.7,vmax=1);plt.colorbar()
+        plt.subplot(132)
+        plt.imshow(test,origin='lowerleft',vmin=0.7,vmax=1);plt.colorbar()
+        plt.subplot(133)
+        plt.imshow(cutout-test,origin='lowerleft',vmin=-0.05,vmax=0.05);plt.colorbar()
+    return fitted_model
