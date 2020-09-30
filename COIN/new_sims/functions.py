@@ -54,7 +54,6 @@ def model_PSF(pupil, aperture, m2_obsc, npix, wl, focal_length, pix_size, transf
         assert pupil_new.shape == wavefront_error.shape
         
         pupil_new *= np.exp(1j*wavefront_error/wl)
-        print('adding WFE')
     
     # Create xy meshgrid
     radius = aperture/2
