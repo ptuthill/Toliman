@@ -1,0 +1,3 @@
+# These are updated codes that have been translated from IDL to python.
+# Everything is there and all codes should run straight through.
+# There are some differences between these codes and the IDL codes - primarily just differences in plotting.
